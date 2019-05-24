@@ -1,0 +1,28 @@
+<!-- 
+Definiens customized import template for folder of single-page IMC .tif images which 
+automatically names layers (channels) by file name.
+
+USAGE:
+Place this file in the folder shown in:
+	 Tools -> Import -> Predefined import connectors folder
+in Definiens Developer.
+Access in Developer by going to File -> Predefined Import...
+-->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<ImportDefinitions>
+
+<ImportDefinition name="* STTARR Fluidigm (IMC), 1um/px (one scene per folder)" description="">
+<SceneSearch folders-from-file-system="yes" scene-name="{scene}">
+	<TagString desc="for root folder">{{root}\{scene}\{layer}.{any}:reverse}</TagString>
+	<TagString desc="for sub-folders">{root}{\{any-folders}\{scene}\{layer}.{any}:reverse}</TagString>
+</SceneSearch>
+<SceneDefinition geo-coding="yes" scene-extent="union" scene-unit="Micrometers" pixel-size="1.">
+	<ImageLayer alias="{layer}">
+		<TagString desc="for root folder">{{root}\{scene}\{layer}.{any}:reverse}</TagString>
+		<TagString desc="for sub-folders">{root}{\{any-folders}\{scene}\{layer}.{any}:reverse}</TagString>
+	</ImageLayer>
+</SceneDefinition>
+</ImportDefinition>
+
+</ImportDefinitions>
