@@ -8,6 +8,9 @@ setuptools.setup(
     description="Read and write Fluidigm IMC (imaging mass cytometry) files.",
     url="https://github.com/STTARR/imc-converter",
     packages=["imcconv"],
+    package_data={
+        "imcconv": ["gui/images/*"]
+    },
     python_requires=">=3.6",
     install_requires=[
         "numpy",
@@ -15,5 +18,13 @@ setuptools.setup(
         "tifffile",
         "xarray",
         "xmltodict"
-    ]
+    ],
+    extras_require={
+        "GUI": ["Gooey"]
+    },
+    entry_points={
+        "console_scripts": [
+            "imcconv-gui = imcconv.gui.convert:main [GUI]"
+        ]
+    }
 )
