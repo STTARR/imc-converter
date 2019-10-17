@@ -2,15 +2,19 @@ from pathlib import Path
 from ..imcconv import *
 from gooey import Gooey, GooeyParser, local_resource_path
 import os
+import sys
 
 @Gooey(
     program_name="IMC Converter",
     image_dir=local_resource_path(Path(__file__).parent / "images"),
     progress_regex=r"^File (?P<current>\d+)/(?P<total>\d+): .+$",
     progress_expr="current / total * 100",
-    # Windows-only fix for calling this as a script: 
-    # https://github.com/chriskiehl/Gooey/issues/219
-    target="imcconv-gui.exe" if os.name == "nt" else "imcconv-gui"
+    hide_progress_msg=False,
+    # Windows-only fix for calling this as a script while still working with pyinstaller
+    # Need to quote target in case it contains spaces
+    # related: https://github.com/chriskiehl/Gooey/issues/219
+    target=f'"{Path(sys.argv[0]).name}.exe"' if os.name == "nt" and \
+           Path(sys.argv[0]).suffix != ".exe" else f'"{Path(sys.argv[0]).name}"',
 )
 def main():
     parser = GooeyParser(
@@ -51,12 +55,14 @@ def main():
     args.outdir.mkdir(exist_ok=True)
     for i, f in enumerate(args.filelist):
 
-        print(f"File {i}/{len(args.filelist)}:", f)
+        print(f"File {i+1}/{len(args.filelist)}:", f)
         try:
             if f.suffix == ".txt":
                 arrs = [read_txt(f, fill_missing=args.fillmissing)]
             elif f.suffix == ".mcd":  # Generator
                 arrs = read_mcd(f, fill_missing=args.fillmissing)
+            else:
+                raise ValueError("File does not have a valid IMC file extension.")
 
             # TODO: bubble exceptions from generator
             for arr in arrs:
@@ -70,3 +76,7 @@ def main():
         except Exception as e:
             print(e)
             continue
+
+
+if __name__ == "__main__":
+    main()

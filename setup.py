@@ -7,7 +7,7 @@ setuptools.setup(
     author_email="Fred.Fu@rmp.uhn.ca, STTARR.Image.Analysis@rmp.uhn.ca",
     description="Read and write Fluidigm IMC (imaging mass cytometry) files.",
     url="https://github.com/STTARR/imc-converter",
-    packages=["imcconv"],
+    packages=setuptools.find_packages(),
     package_data={
         "imcconv": ["gui/images/*"]
     },
