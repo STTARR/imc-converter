@@ -50,7 +50,7 @@ def _is_missing_values(arr: np.ndarray) -> bool:
         True if data contains NaN value in row or if number of rows is inconsistent
             with max_x * max_y, otherwise False.
     """
-    nexpected = arr[:,0].max() * arr[:,1].max()
+    nexpected = (arr[:,0].max() + 1) * (arr[:,1].max() + 1)
     return (arr.shape[0] != nexpected or np.isnan(arr).sum() > 0)
 
 
@@ -63,7 +63,7 @@ def read_txt(path: Union[Path, str], fill_missing: float=None) -> xr.DataArray:
     Returns:
         An xarray DataArray containing multichannel image data.
     Raises:
-        ValueError: Fiel is not valid IMC text data or missing values."""
+        ValueError: File is not valid IMC text data or missing values."""
     txt = pd.read_csv(path, sep="\t")
     # Validate text file columns
     expected_cols = ("Start_push", "End_push", "Pushes_duration", "X", "Y", "Z")
