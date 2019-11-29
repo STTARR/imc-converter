@@ -24,8 +24,9 @@ def test_read_txt_raises_error_on_missing_values(
     txt_missing_intensity_values_path, txt_missing_xy_rows_path
 ):
     with pytest.raises(ValueError):
-        read_txt(txt_missing_intensity_values_path)
-        read_txt(txt_missing_xy_rows_path)
+        read_txt(txt_missing_intensity_values_path, fill_missing=None)
+    with pytest.raises(ValueError):
+        read_txt(txt_missing_xy_rows_path, fill_missing=None)
 
 
 def test_read_txt_fill_missing_intensity_values(txt_missing_intensity_values_path):
