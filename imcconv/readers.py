@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Union, List, Sequence, Generator
 
 
-class _ImageData:
+class ROIData:
     """Represents image data (individual ROI). Meant to be instantiated by file
     readers and convert long-form image data into data arrays behind the scenes."""
     def __init__(self, df, name):
@@ -15,6 +15,28 @@ class _ImageData:
         additional columns as channel intensities."""
         self.df = df
         self.name = name
+
+    @classmethod
+    def from_txt(cls, path):
+        """Initialize image from .txt file."""
+        # First pass to validate text file columns are consistent with IMC data
+        header_cols = pd.read_csv(path, sep="\t", nrows=0).columns
+        expected_cols = ("Start_push", "End_push", "Pushes_duration", "X", "Y", "Z")
+        if tuple(header_cols[:6]) != expected_cols or len(header_cols) <= 6:
+            raise ValueError(
+                f"'{str(path)}' is not valid IMC text data (expected first 6 columns: {expected_cols}, plus intensity data)."
+            )
+        # Actual read, dropping irrelevant columns and casting image data to float32
+        txt = pd.read_csv(
+            path, sep="\t",
+            usecols=lambda c: c not in ("Start_push", "End_push", "Pushes_duration", "Z"),
+            index_col=["X", "Y"],
+            dtype={c: np.float32 for c in header_cols[6:]}
+        )
+        # Rename columns to be consistent with .mcd format
+        txt.columns = [_parse_txt_channel(col) for col in txt.columns]
+        return cls(txt, Path(path).stem)
+
     def _df_to_array(self):
         xsz, ysz = self.df.index.to_frame().max()[["X", "Y"]] + 1
         csz = len(self.df.columns)
@@ -24,6 +46,7 @@ class _ImageData:
         # This will create nan rows if certain x/y combinations are missing:
         df_fill = self.df.reindex(multiindex)
         return df_fill.sort_values(["Y", "X"]).values.reshape((ysz, xsz, csz))
+
     def as_dataarray(self, fill_missing):
         # Reshape long-form data to image
         arr = self._df_to_array()
@@ -54,6 +77,7 @@ def _parse_txt_channel(header: str) -> str:
 
 def read_txt(path: Union[Path, str], fill_missing: float=-1) -> xr.DataArray:
     """Read a Fluidigm IMC .txt file and returns the image data as an xarray DataArray.
+    This is a convenience function which avoids instantiating ROIData.
     Args:
         path: path to IMC .txt file.
         fill_missing: value to use to fill in missing image data. If not specified,
@@ -62,21 +86,4 @@ def read_txt(path: Union[Path, str], fill_missing: float=-1) -> xr.DataArray:
         An xarray DataArray containing multichannel image data.
     Raises:
         ValueError: File is not valid IMC text data or missing values."""
-
-    # First pass to validate text file columns are consistent with IMC data
-    header_cols = pd.read_csv(path, sep="\t", nrows=0).columns
-    expected_cols = ("Start_push", "End_push", "Pushes_duration", "X", "Y", "Z")
-    if tuple(header_cols[:6]) != expected_cols or len(header_cols) <= 6:
-        raise ValueError(
-            f"'{str(path)}' is not valid IMC text data (expected first 6 columns: {expected_cols}, plus intensity data)."
-        )
-    # Actual read, dropping irrelevant columns and casting image data to float32
-    txt = pd.read_csv(
-        path, sep="\t",
-        usecols=lambda c: c not in ("Start_push", "End_push", "Pushes_duration", "Z"),
-        index_col=["X", "Y"],
-        dtype={c: np.float32 for c in header_cols[6:]}
-    )
-    # Rename columns to be consistent with .mcd format
-    txt.columns = [_parse_txt_channel(col) for col in txt.columns]
-    return _ImageData(txt, Path(path).stem).as_dataarray(fill_missing)
+    return ROIData.from_txt(path).as_dataarray(fill_missing)
