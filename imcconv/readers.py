@@ -8,8 +8,8 @@ from typing import Union, List, Sequence, Generator
 
 
 class ROIData:
-    """Represents image data (individual ROI). Meant to be instantiated by file
-    readers and convert long-form image data into data arrays behind the scenes."""
+    """Represents image data (individual ROI) in long form. Meant to be instantiated by 
+    file readers and convert long-form image data into data arrays behind the scenes."""
     def __init__(self, df, name):
         """df is a long-form dataarray with columns zero-indexed X, Y as a MultiIndex with
         additional columns as channel intensities."""
@@ -45,6 +45,7 @@ class ROIData:
                                                  names=["X", "Y"])
         # This will create nan rows if certain x/y combinations are missing:
         df_fill = self.df.reindex(multiindex)
+        # Sort values by ascending Y, then X, so that we can reshape in C index order
         return df_fill.sort_values(["Y", "X"]).values.reshape((ysz, xsz, csz))
 
     def as_dataarray(self, fill_missing):
@@ -71,7 +72,7 @@ def _parse_txt_channel(header: str) -> str:
     Returns:
         Channel header renamed to be consistent with MCD Viewer output
     """
-    label, metal, mass = re.findall("(.+)\(([a-zA-Z]+)(\d+)Di\)", header)[0]
+    label, metal, mass = re.findall(r"(.+)\(([a-zA-Z]+)(\d+)Di\)", header)[0]
     return f"{metal}({mass})_{label}"
 
 

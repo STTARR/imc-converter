@@ -11,19 +11,6 @@ import struct
 import re
 
 
-def _parse_channel_headers(headers: Sequence[str]) -> List[str]:
-    """Extract channel and label from text headers and return channels as formatted by
-    MCDViewer. e.g. 80ArAr(ArAr80Di) -> ArAr(80)_80ArAr
-    Args:
-        headers: channel text headers
-    Returns:
-        A list of cleaned channels consistent with MCDViewer output
-    """
-    label, metal, mass = zip(*[re.findall("(.+)\(([a-zA-Z]+)(\d+)Di\)", c)[0] for c in headers])
-    channel = [f"{met}({m})" for met, m in zip(metal, mass)]
-    return [f"{ch}_{l}" for ch, l in zip(channel, label)]
-
-
 def _xyzc_to_arr(arr: np.ndarray, fill_missing: float=None) -> np.ndarray:
     """Transform long-form data with (x, y, z, *channels) columns to an image array
     indexed by (row, col, channel).
@@ -52,42 +39,6 @@ def _is_missing_values(arr: np.ndarray) -> bool:
     """
     nexpected = (arr[:,0].max() + 1) * (arr[:,1].max() + 1)
     return (arr.shape[0] != nexpected or np.isnan(arr).sum() > 0)
-
-
-def read_txt(path: Union[Path, str], fill_missing: float=None) -> xr.DataArray:
-    """Read a Fluidigm IMC .txt file and returns the image data as an xarray DataArray.
-    Args:
-        path: path to IMC .txt file.
-        fill_missing: value to use to fill in missing image data. If not specified,
-            an error will be raised if there is missing image data.
-    Returns:
-        An xarray DataArray containing multichannel image data.
-    Raises:
-        ValueError: File is not valid IMC text data or missing values."""
-    txt = pd.read_csv(path, sep="\t")
-    # Validate text file columns
-    expected_cols = ("Start_push", "End_push", "Pushes_duration", "X", "Y", "Z")
-    if tuple(txt.columns[:6]) != expected_cols:
-        raise ValueError(
-            f"'{str(path)}' is not valid IMC text data (expected first 6 columns: {expected_cols})."
-        )
-    txt = txt.drop(columns=list(expected_cols[:3]))  # Drop first three columns
-    channel_names = _parse_channel_headers(txt.columns[3:])
-    # Check for missing values (either NaN - missing value in row - or num rows inconsistent
-    # with image size
-    if fill_missing is None and _is_missing_values(txt.values):
-        raise ValueError("Image data is missing values. Try specifying 'fill_missing'.")
-    elif fill_missing is not None:
-        # This only does something if the missing data is in an existing row
-        txt = txt.fillna(fill_missing)
-    # Reshape long-form data to image
-    img = _xyzc_to_arr(txt.values, fill_missing).astype(np.float32)
-    return xr.DataArray(img,
-        name=Path(path).stem,
-        dims=("y", "x", "c"),
-        coords={"x": range(img.shape[1]), "y": range(img.shape[0]), 
-                "c": channel_names}
-    )
 
 
 def read_mcd(path: Union[Path, str], fill_missing: float=None, encoding: str="utf-16-le"
