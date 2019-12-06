@@ -13,11 +13,12 @@ import struct
 class ROIData:
     """Represents image data (individual ROI) in long form. Meant to be instantiated by 
     file readers and convert long-form image data into data arrays behind the scenes."""
-    def __init__(self, df, name):
+    def __init__(self, df, name, attrs=None):
         """df is a long-form dataarray with columns zero-indexed X, Y as a MultiIndex with
         additional columns as channel intensities."""
         self.df = df
         self.name = name
+        self.attrs = attrs
 
     @classmethod
     def from_txt(cls, path):
@@ -63,7 +64,8 @@ class ROIData:
             name=self.name,
             dims=("y", "x", "c"),
             coords={"x": range(arr.shape[1]), "y": range(arr.shape[0]), 
-                    "c": self.df.columns.tolist()}
+                    "c": self.df.columns.tolist()},
+            attrs=self.attrs
         )
 
 
@@ -141,4 +143,4 @@ def read_mcd(path: Union[Path, str], fill_missing: float=-1, encoding: str="utf-
                     .drop(columns=["Z"])
                     .astype({"X": np.int64, "Y": np.int64})
                     .set_index(["X", "Y"]))
-                yield ROIData(df, f"{Path(path).stem}_{id_}").as_dataarray(fill_missing)
+                yield ROIData(df, f"{Path(path).stem}_{id_}", acq).as_dataarray(fill_missing)

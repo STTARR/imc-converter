@@ -1,5 +1,5 @@
 from pathlib import Path
-from ..imcconv import *
+from imcconv import *
 from gooey import Gooey, GooeyParser, local_resource_path
 import os
 import sys
