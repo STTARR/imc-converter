@@ -1,10 +1,13 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
+import xmltodict
 
 import re
 from pathlib import Path
 from typing import Union, List, Sequence, Generator
+import mmap
+import struct
 
 
 class ROIData:
@@ -88,3 +91,54 @@ def read_txt(path: Union[Path, str], fill_missing: float=-1) -> xr.DataArray:
     Raises:
         ValueError: File is not valid IMC text data or missing values."""
     return ROIData.from_txt(path).as_dataarray(fill_missing)
+
+
+def read_mcd(path: Union[Path, str], fill_missing: float=-1, encoding: str="utf-16-le"
+            ) -> Generator[xr.DataArray, None, None]:
+    """Read a Fluidigm IMC .mcd file and yields xarray DataArray
+    (since MCD files can contain more than one image). 
+    Args:
+        path: path to IMC .mcd file.
+        fill_missing: value to use to fill in missing image data. If not specified,
+            an error will be raised if there is missing image data.
+        encoding: specifies the Unicode encoding of the XML section (defaults to UTF-16-LE).
+    Returns:
+        A generator of xarray DataArrays containing multichannel image data.
+    """
+    with open(path, mode="rb") as fh:
+        with mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+            # MCD format documentation recommends searching from end for "<MCDPublic"
+            offset = mm.rfind("<MCDPublic".encode(encoding))
+            if offset == -1:
+                raise ValueError(f"'{str(path)}' does not contain MCDPublic XML footer (try different encoding?).")
+            mm.seek(offset)
+            xml = mm.read().decode(encoding)
+            # Parse xml, force Acquisition(Channel) to be list even if single item so we can
+            # always iterate over it
+            root = xmltodict.parse(xml, 
+                force_list=("Acquisition", "AcquisitionChannel"))["MCDPublic"]
+            acquisitions = root["Acquisition"]
+            for acq in acquisitions:
+                id_ = acq["ID"]
+                channels = sorted(
+                    [ch for ch in root["AcquisitionChannel"] if ch["AcquisitionID"] == id_],
+                    key=lambda c: int(c["OrderNumber"])
+                )
+                channel_names = [f"{c['ChannelName']}_{c['ChannelLabel']}" 
+                    if c["ChannelName"] != c["ChannelLabel"] and c["ChannelLabel"] is not None
+                    else c["ChannelName"] for c in channels]
+                # Parse 4-byte float values
+                # Data consists of values ordered X, Y, Z, C1, C2, ..., CN (and so on)
+                if acq["SegmentDataFormat"] != "Float" or acq["ValueBytes"] != "4":
+                    raise NotImplementedError("Expected float32 data in 'SegmentDataFormat' tag.")
+                mm.seek(int(acq["DataStartOffset"]))
+                raw = mm.read(int(acq["DataEndOffset"]) - int(acq["DataStartOffset"]))
+                arr = np.array(
+                    [struct.unpack("f", raw[i:i+4])[0] for i in range(0, len(raw), 4)],
+                    dtype=np.float32
+                ).reshape((-1, len(channels)))            
+                df = (pd.DataFrame(arr, columns=channel_names)
+                    .drop(columns=["Z"])
+                    .astype({"X": np.int64, "Y": np.int64})
+                    .set_index(["X", "Y"]))
+                yield ROIData(df, f"{Path(path).stem}_{id_}").as_dataarray(fill_missing)
