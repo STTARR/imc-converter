@@ -2,8 +2,9 @@
 
 import pytest
 import os
-from imcconv import imcconv
+from imcconv.readers import _parse_txt_channel
 import numpy as np
 
+
 def test_parse_channel_headers():
-    assert imcconv._parse_channel_headers(["80ArAr(ArAr80Di)"])[0] == "ArAr(80)_80ArAr"
+    assert _parse_txt_channel("80ArAr(ArAr80Di)") == "ArAr(80)_80ArAr"
