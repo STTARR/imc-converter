@@ -19,3 +19,5 @@ def path_to_ref_file(fname: str):
 txt_missing_intensity_values_path = path_to_ref_file("txt_missing_intensity_values.txt")
 txt_missing_xy_rows_path = path_to_ref_file("txt_missing_xy_rows.txt")
 txt_valid_path = path_to_ref_file("txt_valid.txt")
+mcd_valid = path_to_ref_file("mcd_valid.mcd")
+mcd_valid_as_txt = path_to_ref_file("mcd_valid_as_txt.txt")

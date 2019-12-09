@@ -5,7 +5,8 @@ import pickle
 from pathlib import Path
 
 import pytest
-from imcconv import read_txt, ROIData
+import xarray.testing
+from imcconv import read_txt, read_mcd, ROIData
 
 
 def unpickle_ref(path):
@@ -47,3 +48,10 @@ def test_read_txt_on_shuffled_rows(txt_valid_path):
     roi.df = roi.df.sample(frac=1)
     arr_shuffled = roi.as_dataarray(None)
     assert arr.equals(arr_shuffled)
+
+
+def test_read_mcd_equivalent_to_read_txt(mcd_valid, mcd_valid_as_txt):
+    mcd_roi = next(read_mcd(mcd_valid))
+    txt_roi = read_txt(mcd_valid_as_txt)
+    # There can be a slight precision difference so test using allclose
+    xarray.testing.assert_allclose(mcd_roi, txt_roi)

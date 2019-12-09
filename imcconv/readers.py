@@ -95,6 +95,16 @@ def read_txt(path: Union[Path, str], fill_missing: float=-1) -> xr.DataArray:
     return ROIData.from_txt(path).as_dataarray(fill_missing)
 
 
+def _parse_mcd_channel(attr: dict) -> str:
+    """Extract channel and label from MCD channel XML data."""
+    if attr["ChannelName"] in ("X", "Y", "Z"):
+        return attr["ChannelName"]
+    if attr["ChannelLabel"] is None:  # Use ChannelName to create label in right format
+        label, mass = re.findall(r"(.+)\((\d+)\)", attr["ChannelName"])[0]
+        attr["ChannelLabel"] = f"{label}{mass}"
+    return f"{attr['ChannelName']}_{attr['ChannelLabel']}"
+
+
 def read_mcd(path: Union[Path, str], fill_missing: float=-1, encoding: str="utf-16-le"
             ) -> Generator[xr.DataArray, None, None]:
     """Read a Fluidigm IMC .mcd file and yields xarray DataArray
@@ -126,9 +136,7 @@ def read_mcd(path: Union[Path, str], fill_missing: float=-1, encoding: str="utf-
                     [ch for ch in root["AcquisitionChannel"] if ch["AcquisitionID"] == id_],
                     key=lambda c: int(c["OrderNumber"])
                 )
-                channel_names = [f"{c['ChannelName']}_{c['ChannelLabel']}" 
-                    if c["ChannelName"] != c["ChannelLabel"] and c["ChannelLabel"] is not None
-                    else c["ChannelName"] for c in channels]
+                channel_names = [_parse_mcd_channel(dict(c)) for c in channels]
                 # Parse 4-byte float values
                 # Data consists of values ordered X, Y, Z, C1, C2, ..., CN (and so on)
                 if acq["SegmentDataFormat"] != "Float" or acq["ValueBytes"] != "4":
