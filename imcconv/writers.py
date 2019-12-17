@@ -45,16 +45,9 @@ def write_ometiff(imarr: xr.DataArray, outpath: Union[Path, str], summary: bool=
     </OME>
     """
     outpath.parent.mkdir(parents=True, exist_ok=True)
-    tifffile.imwrite(outpath, data=imarr.values, description=xml, contiguous=True, **kwargs)
-    if summary:
-        # Write MCDViewer summary, might be needed for compatibility with Visiopharm (?)
-        summaryfname = outpath.name.rstrip(''.join(outpath.suffixes)) + "_summary.txt"
-        rows = []
-        for page, imchannel in enumerate(imarr):
-            channel, label = str(imchannel.c.values).split("_")
-            rows.append([page, channel, label, imchannel.values.min(), imchannel.values.max()])
-        pd.DataFrame(rows, columns=["Page", "Channel", "Label", "MinValue", "MaxValue"]) \
-          .to_csv(outpath.with_name(summaryfname), index=False, sep="\t")
+    # Note resolution: 1 um/px = 25400 px/inch
+    tifffile.imwrite(outpath, data=imarr.values, description=xml, contiguous=True, 
+                     resolution=(25400, 25400, "inch"), **kwargs)
 
 
 def write_individual_tiffs(imarr: xr.DataArray, outdir: Union[Path, str], **kwargs) -> None:
@@ -67,4 +60,5 @@ def write_individual_tiffs(imarr: xr.DataArray, outdir: Union[Path, str], **kwar
     imarr = imarr.transpose("c", "y", "x")
     outdir.mkdir(parents=True, exist_ok=True)
     for imchannel in imarr:
-        tifffile.imwrite(Path(outdir) / f"{str(imchannel.c.values)}.tiff", data=imchannel.values, **kwargs)
+        tifffile.imwrite(Path(outdir) / f"{str(imchannel.c.values)}.tiff", data=imchannel.values, 
+                         resolution=(25400, 25400, "inch"), **kwargs)
