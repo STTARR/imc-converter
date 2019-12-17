@@ -5,12 +5,11 @@ from pathlib import Path
 from typing import Union, List, Sequence, Generator
 
 
-def write_ometiff(imarr: xr.DataArray, outpath: Union[Path, str], summary: bool=False, **kwargs) -> None:
+def write_ometiff(imarr: xr.DataArray, outpath: Union[Path, str], **kwargs) -> None:
     """Write DataArray to a multi-page OME-TIFF file.
     Args:
         imarr: image DataArray object
         outpath: file to output to
-        summary: whether to output MCDViewer summary file with export
         **kwargs: Additional arguments to tifffile.imwrite
     """
     outpath = Path(outpath)
