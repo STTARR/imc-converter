@@ -24,6 +24,9 @@ setuptools.setup(
     },
     entry_points={
         "console_scripts": [
+            "imcconv-gui-console = imcconv.gui.convert:main [GUI]"
+        ],
+        "gui_scripts": [
             "imcconv-gui = imcconv.gui.convert:main [GUI]"
         ]
     }

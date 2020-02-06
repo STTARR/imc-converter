@@ -17,7 +17,7 @@ DataArray objects were chosen since they maintain the channel name information, 
 
 `pip install git+https://github.com/STTARR/imc-converter.git#egg=imc-converter[GUI]`
 
-The conversion utility can be accessed using the comand `imcconv-gui` (for GUI interface, recommended) or `imcconv-gui --ignore-gooey` (command-line script). If this utility is not required, then you can omit the `[GUI]` flag in the pip command. On Linux, you may need to install the wxPython dependency for Gooey from your package manager or inside of a conda environment (on Windows and Mac, it's available as a wheel on PyPi, so it should be downloaded when invoking pip).
+The conversion utility can be accessed using the comand `imcconv-gui` (for GUI interface, recommended) or `imcconv-gui-console --ignore-gooey` (command-line script). If this utility is not required, then you can omit the `[GUI]` flag in the pip command. On Linux, you may need to install the wxPython dependency for Gooey from your package manager or inside of a conda environment (on Windows and Mac, it's available as a wheel on PyPi, so it should be downloaded when invoking pip).
 
 ### pyinstaller binary
 
