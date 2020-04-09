@@ -59,5 +59,7 @@ def write_individual_tiffs(imarr: xr.DataArray, outdir: Union[Path, str], **kwar
     imarr = imarr.transpose("c", "y", "x")
     outdir.mkdir(parents=True, exist_ok=True)
     for imchannel in imarr:
-        tifffile.imwrite(Path(outdir) / f"{str(imchannel.c.values)}.tiff", data=imchannel.values, 
+        # Sanitize slashes in channel name
+        imchannel_name = str(imchannel.c.values).replace("/", "-")
+        tifffile.imwrite(Path(outdir) / f"{imchannel_name}.tiff", data=imchannel.values, 
                          resolution=(25400, 25400, "inch"), **kwargs)
