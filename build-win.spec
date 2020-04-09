@@ -41,7 +41,7 @@ def Entrypoint(dist, group, name, **kwargs):
 image_overrides = Tree('imcconv/gui/images', prefix='imcconv/gui/images')
 
 a = Entrypoint(
-    "imc-converter", "console_scripts", "imcconv-gui",
+    "imc-converter", "gui_scripts", "imcconv-gui",
     binaries=[],
     datas=[],
     hiddenimports=[],

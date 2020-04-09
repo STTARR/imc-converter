@@ -44,7 +44,7 @@ image_data = [
 ]
 
 a = Entrypoint(
-    "imc-converter", "console_scripts", "imcconv-gui",
+    "imc-converter", "gui_scripts", "imcconv-gui",
     binaries=[],
     datas=image_data,
     hiddenimports=[],
